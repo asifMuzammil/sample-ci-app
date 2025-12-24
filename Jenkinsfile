@@ -39,16 +39,21 @@ pipeline {
         stage('Smoke Test') {
             steps {
                 sh '''
-                  docker run -d --rm --name ci-test \
-                    -p 8091:8080 \
+                docker run -d --rm --name ci-test \
                     -e CI_STAGE=jenkins_smoke \
+                    -e GIT_SHA=${GIT_SHA} \
+                    -e BUILD_DATE=${BUILD_DATE} \
+                    -e BUILD_NUMBER=${BUILD_NUMBER} \
                     sample-ci-app:${GIT_SHA}
 
-                  sleep 3
-                  curl -fsS http://localhost:8091/health
-                  curl -fsS http://localhost:8091/version
+                # Wait briefly for gunicorn to start
+                sleep 2
 
-                  docker rm -f ci-test
+                # Run curl from a separate container that shares ci-test's network
+                docker run --rm --network container:ci-test curlimages/curl:8.6.0 -fsS http://localhost:8080/health
+                docker run --rm --network container:ci-test curlimages/curl:8.6.0 -fsS http://localhost:8080/version
+
+                docker rm -f ci-test
                 '''
             }
         }
