@@ -39,6 +39,9 @@ pipeline {
         stage('Smoke Test') {
             steps {
                 sh '''
+		# Cleanup any leftover container from previous runs
+      		docker rm -f ci-test 2>/dev/null || true
+		# Start container
                 docker run -d --rm --name ci-test \
                     -e CI_STAGE=jenkins_smoke \
                     -e GIT_SHA=${GIT_SHA} \
